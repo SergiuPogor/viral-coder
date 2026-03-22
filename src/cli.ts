@@ -1,5 +1,8 @@
 import { Command } from 'commander';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const { version: PKG_VERSION } = require('../package.json');
 import { resolve, join, basename, dirname } from 'path';
 import ora from 'ora';
 import chalk from 'chalk';
@@ -214,7 +217,7 @@ async function generateVideo(
 const program = new Command()
   .name('viral-coder')
   .description('Generate TikTok-ready coding videos from any source file')
-  .version('1.0.0');
+  .version(PKG_VERSION);
 
 // ─── generate ─────────────────────────────────────────────────────────────────
 
