@@ -2,5 +2,5 @@ node_modules/
 dist/
 output/
 /tmp/viral-coder-*/
-*.mp4
+examples/videos/
 .DS_Store

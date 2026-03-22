@@ -17,6 +17,38 @@
 
 ---
 
+
+## 🎬 Examples
+
+All videos generated automatically by viral-coder — no editing, no screen recording.
+
+### Themes (same code, 8 different themes)
+
+| Theme | Preview |
+|-------|---------|
+| tokyo-night | [▶ Watch](https://github.com/SergiuPogor/viral-coder/releases/download/v1.0.4-examples/theme-tokyo-night.mp4) |
+| dracula | [▶ Watch](https://github.com/SergiuPogor/viral-coder/releases/download/v1.0.4-examples/theme-dracula.mp4) |
+| catppuccin | [▶ Watch](https://github.com/SergiuPogor/viral-coder/releases/download/v1.0.4-examples/theme-catppuccin.mp4) |
+| github-dark | [▶ Watch](https://github.com/SergiuPogor/viral-coder/releases/download/v1.0.4-examples/theme-github-dark.mp4) |
+| monokai-pro | [▶ Watch](https://github.com/SergiuPogor/viral-coder/releases/download/v1.0.4-examples/theme-monokai-pro.mp4) |
+| one-dark | [▶ Watch](https://github.com/SergiuPogor/viral-coder/releases/download/v1.0.4-examples/theme-one-dark.mp4) |
+| nord | [▶ Watch](https://github.com/SergiuPogor/viral-coder/releases/download/v1.0.4-examples/theme-nord.mp4) |
+| gruvbox | [▶ Watch](https://github.com/SergiuPogor/viral-coder/releases/download/v1.0.4-examples/theme-gruvbox.mp4) |
+
+### Languages (tokyo-night theme, different code)
+
+| Language | Hook | Preview |
+|----------|------|---------|
+| TypeScript | Async retry that saves prod at 3am | [▶ Watch](https://github.com/SergiuPogor/viral-coder/releases/download/v1.0.4-examples/lang-typescript.mp4) |
+| Python | One-liners that replace 50 lines | [▶ Watch](https://github.com/SergiuPogor/viral-coder/releases/download/v1.0.4-examples/lang-python.mp4) |
+| Rust | Zero-copy parser, zero allocations | [▶ Watch](https://github.com/SergiuPogor/viral-coder/releases/download/v1.0.4-examples/lang-rust.mp4) |
+| Go | Fan-out goroutines, 10x faster API | [▶ Watch](https://github.com/SergiuPogor/viral-coder/releases/download/v1.0.4-examples/lang-go.mp4) |
+| Python decorators | retry/memoize/rate_limit chained | [▶ Watch](https://github.com/SergiuPogor/viral-coder/releases/download/v1.0.4-examples/lang-python2.mp4) |
+| JavaScript | Most over-engineered FizzBuzz ever | [▶ Watch](https://github.com/SergiuPogor/viral-coder/releases/download/v1.0.4-examples/lang-javascript.mp4) |
+| SQL | Recursive CTE graph traversal | [▶ Watch](https://github.com/SergiuPogor/viral-coder/releases/download/v1.0.4-examples/lang-sql.mp4) |
+
+> All example source files are in [examples/code/](./examples/code/)
+
 ## What It Does
 
 ```
