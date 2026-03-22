@@ -220,7 +220,7 @@ body {
 </style>
 
 <!-- Monaco CDN -->
-<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.48.0/min/vs/loader.js"></script>
+<script src="__MONACO_LOADER__"></script>
 </head>
 <body>
 
@@ -436,7 +436,7 @@ window.initEditor = function(cfg) {
   }
 
   return new Promise((resolve) => {
-    require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.48.0/min/vs' } });
+    require.config({ paths: { vs: '__MONACO_VS__' } });
     require(['vs/editor/editor.main'], function() {
       editor = monaco.editor.create(document.getElementById('monaco-container'), {
         value: '',
@@ -453,12 +453,29 @@ window.initEditor = function(cfg) {
         renderWhitespace: 'none',
         wordWrap: 'off',
         padding: { top: 16, bottom: 16 },
-        lineHeight: 1.7,
-        letterSpacing: 0.3,
+        lineHeight: 1.75,
+        letterSpacing: 0.5,
         contextmenu: false,
         automaticLayout: true,
         readOnly: false,
         hideCursorInOverviewRuler: true,
+        // CRITICAL: disable ALL autocomplete/suggestions to prevent garbled text
+        quickSuggestions: false,
+        suggestOnTriggerCharacters: false,
+        acceptSuggestionOnEnter: 'off',
+        acceptSuggestionOnCommitCharacter: false,
+        wordBasedSuggestions: 'off',
+        parameterHints: { enabled: false },
+        autoClosingBrackets: 'never',
+        autoClosingQuotes: 'never',
+        autoClosingOvertype: 'never',
+        autoSurround: 'never',
+        autoIndent: 'none',
+        formatOnType: false,
+        formatOnPaste: false,
+        snippetSuggestions: 'none',
+        tabCompletion: 'off',
+        suggest: { showWords: false, showSnippets: false, showUsers: false, showIssues: false },
         cursorBlinking: 'smooth',
         cursorSmoothCaretAnimation: 'on',
         smoothScrolling: true,
@@ -474,20 +491,33 @@ window.initEditor = function(cfg) {
   });
 };
 
-// Type a single character
+// Full source loaded upfront — we reveal char-by-char by tracking position
+let _fullSource = '';
+let _revealedChars = 0;
+
+window.loadSource = function(source) {
+  _fullSource = source;
+  _revealedChars = 0;
+  // Set full code immediately for syntax highlighting, then hide via overlay
+  editor.setValue('');
+};
+
 window.typeChar = function(char) {
   if (!editor) return;
-  if (char === '\n') {
-    editor.trigger('keyboard', 'type', { text: '\n' });
-    _currentLineCount++;
-  } else if (char === '\t') {
-    editor.trigger('keyboard', 'tab', {});
-  } else {
-    editor.trigger('keyboard', 'type', { text: char });
-  }
-  // Smooth scroll: reveal cursor position
+  _revealedChars++;
+  const revealed = _fullSource.slice(0, _revealedChars);
+  // Use setValue to set exact content — no autocomplete interference
   const pos = editor.getPosition();
-  editor.revealPositionInCenter(pos);
+  editor.setValue(revealed);
+  // Move cursor to end
+  const model = editor.getModel();
+  if (model) {
+    const lineCount = model.getLineCount();
+    const lastCol = model.getLineMaxColumn(lineCount);
+    editor.setPosition({ lineNumber: lineCount, column: lastCol });
+    editor.revealPositionInCenter({ lineNumber: lineCount, column: lastCol });
+  }
+  if (char === '\n') _currentLineCount++;
 };
 
 window.typeBackspace = function() {
