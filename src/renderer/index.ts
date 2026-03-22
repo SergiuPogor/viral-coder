@@ -52,9 +52,10 @@ export async function renderFrames(opts: RendererOptions): Promise<RendererResul
   const frameDir = session.frameDir;
   mkdirSync(frameDir, { recursive: true });
 
-  const editorHtmlPath = join(__dirname, 'editor.html');
+  // editor.html lives next to the compiled JS (dist/renderer/) or src/renderer/
+  let editorHtmlPath = join(__dirname, 'editor.html');
   if (!existsSync(editorHtmlPath)) {
-    throw new Error(`Editor HTML not found at: ${editorHtmlPath}`);
+    throw new Error(`Editor HTML not found. Expected at: ${editorHtmlPath}`);
   }
 
   // Determine resolution
@@ -96,17 +97,32 @@ export async function renderFrames(opts: RendererOptions): Promise<RendererResul
 
   await page.goto(`file://${editorHtmlPath}`, { waitUntil: 'domcontentloaded' });
 
-  // Count source lines for status bar
+  // Auto font size: scale to fill available editor area
   const sourceLines = session.segments.reduce((count, seg) => {
     return count + (seg.content.match(/\n/g) ?? []).length;
-  }, 0);
+  }, 0) + 1;
+
+  const MIN_FONT = 11;
+  const MAX_FONT = 22;
+  const TITLEBAR_H = 34;
+  const STATUSBAR_H = 24;
+  const EDITOR_VERTICAL_PADDING = 64; // Monaco top+bottom padding
+  const LINE_HEIGHT_RATIO = 1.7;
+
+  const availableEditorHeight = vpHeight - TITLEBAR_H - STATUSBAR_H - EDITOR_VERTICAL_PADDING;
+  const optimalFont = Math.min(
+    Math.max(11, Math.floor(availableEditorHeight / (sourceLines * LINE_HEIGHT_RATIO))),
+    MAX_FONT
+  );
+  // Only scale DOWN from config default, never up (don't make tiny files huge)
+  const finalFontSize = Math.min(config.ide.font_size ?? 15, optimalFont);
 
   await page.evaluate(async (cfg: Record<string, unknown>) => {
     return (window as any).initEditor(cfg);
   }, {
     theme: config.ide.theme,
     font: config.ide.font,
-    fontSize: config.ide.font_size,
+    fontSize: finalFontSize,
     filename,
     language,
     monacoLanguage: getMonacoLanguage(language),

@@ -9,12 +9,14 @@
   "repository": { "type": "git", "url": "https://github.com/SergiuPogor/viral-coder.git" },
   "type": "module",
   "bin": { "viral-coder": "./bin/viral-coder.js" },
-  "files": ["bin", "src", "assets", "README.md", "LICENSE"],
+  "exports": { ".": "./dist/cli.js" },
+  "files": ["bin", "dist", "assets", "README.md", "LICENSE"],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && mkdir -p dist/renderer && cp src/renderer/editor.html dist/renderer/editor.html",
     "dev": "tsc --watch",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "lint": "eslint src --ext .ts",
+    "prepublishOnly": "npm run build",
     "postinstall": "playwright install chromium 2>/dev/null || true"
   },
   "dependencies": {

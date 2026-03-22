@@ -277,6 +277,7 @@ body {
     <span id="status-lines">0 lines</span>
     <span id="status-pos">Ln 1, Col 1</span>
     <span id="status-enc">UTF-8</span>
+    <span id="status-font-size">15px</span>
   </div>
 </div>
 
@@ -421,6 +422,7 @@ window.initEditor = function(cfg) {
   document.getElementById('secondary-tab').textContent = getSecondaryTabName(cfg.language || 'typescript');
   document.getElementById('window-title').textContent = `${cfg.filename || 'index.ts'} — viral-coder`;
   document.getElementById('status-lang').textContent = cfg.languageLabel || 'JavaScript';
+  document.getElementById('status-font-size').textContent = (cfg.fontSize || 15) + 'px';
 
   buildFileTree(cfg.filename || 'index.ts', cfg.language || 'typescript');
 
@@ -514,6 +516,14 @@ window.showTerminal = function(output) {
   if (term) term.classList.add('visible');
   const body = document.getElementById('terminal-body');
   if (body) body.textContent = '$ ' + (window._termCmd || '') + '\n' + output;
+};
+
+window.setFontSize = function(size) {
+  if (editor) {
+    editor.updateOptions({ fontSize: size });
+    const el = document.getElementById('status-font-size');
+    if (el) el.textContent = size + 'px';
+  }
 };
 
 window.updateStatusPos = function(line, col) {
