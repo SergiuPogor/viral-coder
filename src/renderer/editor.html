@@ -47,6 +47,9 @@ body {
   background: var(--bg, #1a1b26);
   border-bottom: 2px solid var(--accent, #7aa2f7);
 }
+.tab.inactive {
+  opacity: 0.5;
+}
 .titlebar-filename {
   flex: 1;
   text-align: center;
@@ -92,6 +95,13 @@ body {
   color: var(--text, #c0caf5);
 }
 .tree-item .icon { font-size: 11px; width: 14px; }
+.git-badge {
+  font-size: 10px;
+  color: var(--accent, #7aa2f7);
+  margin-left: auto;
+  padding-right: 8px;
+  font-family: monospace;
+}
 
 /* ── Editor area ── */
 .editor-wrap {
@@ -162,7 +172,7 @@ body {
 .progress-bar {
   position: absolute;
   top: 0; left: 0;
-  height: 2px;
+  height: 3px;
   background: var(--accent, #7aa2f7);
   width: 0%;
   transition: width 0.1s linear;
@@ -216,7 +226,7 @@ body {
 <!-- Hook overlay -->
 <div class="hook-overlay" id="hook">
   <div>
-    <span class="hook-emoji" id="hook-emoji">💡</span>
+    <span class="hook-emoji" id="hook-emoji"></span>
     <div class="hook-text" id="hook-text">Loading...</div>
     <div class="hook-sub" id="hook-sub"></div>
   </div>
@@ -231,8 +241,9 @@ body {
   </div>
   <div class="titlebar-tabs">
     <div class="tab active" id="active-tab">index.ts</div>
+    <div class="tab inactive" id="secondary-tab">package.json</div>
   </div>
-  <div class="titlebar-filename" id="window-title">viral-coder — VS Code</div>
+  <div class="titlebar-filename" id="window-title">viral-coder</div>
 </div>
 
 <!-- Main -->
@@ -251,7 +262,7 @@ body {
     </div>
     <!-- Terminal (hidden by default) -->
     <div class="terminal" id="terminal">
-      <div class="terminal-header">⚡ Terminal</div>
+      <div class="terminal-header">Terminal</div>
       <div class="terminal-body" id="terminal-body"></div>
     </div>
   </div>
@@ -259,12 +270,13 @@ body {
 
 <!-- Status bar -->
 <div class="statusbar" id="statusbar">
-  <span id="status-branch">⎇ main</span>
+  <span id="status-branch">main</span>
+  <span id="status-changes"></span>
   <span id="status-lang">TypeScript</span>
   <div class="statusbar-right">
+    <span id="status-lines">0 lines</span>
     <span id="status-pos">Ln 1, Col 1</span>
     <span id="status-enc">UTF-8</span>
-    <span id="status-theme">Tokyo Night</span>
   </div>
 </div>
 
@@ -339,6 +351,8 @@ const THEMES = {
 
 let editor = null;
 let currentConfig = {};
+let _totalLines = 0;
+let _currentLineCount = 0;
 
 function applyTheme(themeName) {
   const t = THEMES[themeName] || THEMES['tokyo-night'];
@@ -361,6 +375,19 @@ function applyTheme(themeName) {
   return t.monacoTheme;
 }
 
+function getSecondaryTabName(language) {
+  const map = {
+    javascript: 'package.json', typescript: 'package.json',
+    python: 'requirements.txt', rust: 'Cargo.toml',
+    go: 'go.mod', java: 'pom.xml',
+    ruby: 'Gemfile', php: 'composer.json',
+    csharp: 'project.csproj', kotlin: 'build.gradle',
+    swift: 'Package.swift', shell: 'Makefile',
+    html: 'style.css', css: 'index.html',
+  };
+  return map[language] || 'package.json';
+}
+
 function buildFileTree(filename, language) {
   const icons = {
     typescript: '📄', javascript: '📄', python: '🐍', rust: '🦀',
@@ -374,8 +401,11 @@ function buildFileTree(filename, language) {
   if (!tree) return;
   tree.innerHTML = `
     <div class="tree-item" style="padding-left:12px;color:var(--text-muted)">📁 src</div>
-    <div class="tree-item active">${icon} ${filename}</div>
-    <div class="tree-item" style="opacity:0.4">📄 package.json</div>
+    <div class="tree-item active">
+      <span>${icon} ${filename}</span>
+      <span class="git-badge" id="git-badge">+0 -0</span>
+    </div>
+    <div class="tree-item" style="opacity:0.4">📄 ${getSecondaryTabName(language)}</div>
     <div class="tree-item" style="opacity:0.4">📄 README.md</div>
     <div class="tree-item" style="opacity:0.4">📁 tests</div>
   `;
@@ -384,12 +414,13 @@ function buildFileTree(filename, language) {
 // Called from Playwright before typing starts
 window.initEditor = function(cfg) {
   currentConfig = cfg;
+  _totalLines = cfg.totalLines || 0;
   const monacoTheme = applyTheme(cfg.theme);
 
   document.getElementById('active-tab').textContent = cfg.filename || 'index.ts';
+  document.getElementById('secondary-tab').textContent = getSecondaryTabName(cfg.language || 'typescript');
   document.getElementById('window-title').textContent = `${cfg.filename || 'index.ts'} — viral-coder`;
   document.getElementById('status-lang').textContent = cfg.languageLabel || 'JavaScript';
-  document.getElementById('status-theme').textContent = cfg.theme || 'tokyo-night';
 
   buildFileTree(cfg.filename || 'index.ts', cfg.language || 'typescript');
 
@@ -421,13 +452,15 @@ window.initEditor = function(cfg) {
         automaticLayout: true,
         readOnly: false,
         hideCursorInOverviewRuler: true,
+        cursorBlinking: 'smooth',
+        cursorSmoothCaretAnimation: 'on',
+        smoothScrolling: true,
         guides: {
           indentation: cfg.indentGuides !== false,
           bracketPairs: cfg.bracketPairs !== false,
         },
       });
 
-      // Keep editor focused
       editor.focus();
       resolve(true);
     });
@@ -439,13 +472,15 @@ window.typeChar = function(char) {
   if (!editor) return;
   if (char === '\n') {
     editor.trigger('keyboard', 'type', { text: '\n' });
+    _currentLineCount++;
   } else if (char === '\t') {
     editor.trigger('keyboard', 'tab', {});
   } else {
     editor.trigger('keyboard', 'type', { text: char });
   }
-  // Auto-scroll to cursor
-  editor.revealPositionInCenter(editor.getPosition());
+  // Smooth scroll: reveal cursor position
+  const pos = editor.getPosition();
+  editor.revealPositionInCenter(pos);
 };
 
 window.typeBackspace = function() {
@@ -464,7 +499,7 @@ window.showHook = function(text, emoji, sub) {
   const emojiEl = document.getElementById('hook-emoji');
   const subEl = document.getElementById('hook-sub');
   if (textEl) textEl.textContent = text;
-  if (emojiEl) emojiEl.textContent = emoji || '💡';
+  if (emojiEl) emojiEl.textContent = emoji || '';
   if (subEl) subEl.textContent = sub || '';
   if (el) el.classList.add('visible');
 };
@@ -484,6 +519,17 @@ window.showTerminal = function(output) {
 window.updateStatusPos = function(line, col) {
   const el = document.getElementById('status-pos');
   if (el) el.textContent = `Ln ${line}, Col ${col}`;
+};
+
+window.updateLineCount = function(lineCount) {
+  const el = document.getElementById('status-lines');
+  if (el) el.textContent = `${lineCount} lines`;
+  // Update git badge
+  const badge = document.getElementById('git-badge');
+  if (badge) badge.textContent = `+${lineCount} -0`;
+  // Update changes in status bar
+  const changes = document.getElementById('status-changes');
+  if (changes) changes.textContent = `+${lineCount}`;
 };
 </script>
 </body>

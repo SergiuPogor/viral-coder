@@ -29,6 +29,7 @@ export const DEFAULTS: ResolvedConfig = {
     cursor_hover: true,
     show_autocomplete: true,
     autocomplete_accept_delay: [0.6, 1.4],
+    speed_ramp: 'natural',
   },
   virality: {
     hook_enabled: true,
@@ -59,4 +60,10 @@ export const DEFAULTS: ResolvedConfig = {
   zoom_factor: 1.08,
   multi_file: false,
   batch: 1,
+};
+
+export const RESOLUTION_MAP: Record<string, { width: number; height: number }> = {
+  '720p': { width: 720, height: 1280 },
+  '1080p': { width: 1080, height: 1920 },
+  '4k': { width: 2160, height: 3840 },
 };

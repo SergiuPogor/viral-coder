@@ -35,9 +35,11 @@ export type ThemeName =
 
 export type Platform = 'tiktok' | 'reels' | 'shorts' | 'all';
 export type HookStyle = 'bold_center' | 'top_ticker' | 'slide_in';
-export type CaptionMode = 'explain' | 'hype' | 'none';
-export type KeystrokePack = 'cherry_mx_blue' | 'topre' | 'membrane';
+export type CaptionMode = 'explain' | 'code' | 'none';
+export type KeystrokePack = 'cherry_mx_blue' | 'cherry_mx_brown' | 'laptop_keyboard' | 'mechanical_soft';
 export type TerminalPosition = 'split_bottom' | 'fullscreen';
+export type SpeedRamp = 'natural' | 'rocket' | 'dramatic';
+export type Resolution = '720p' | '1080p' | '4k';
 
 // ─── Segment Types ────────────────────────────────────────────────────────────
 
@@ -136,6 +138,7 @@ export interface TypingConfig {
   cursor_hover: boolean;
   show_autocomplete: boolean;
   autocomplete_accept_delay: [number, number];
+  speed_ramp: SpeedRamp;
 }
 
 export interface ViralityConfig {
@@ -177,4 +180,16 @@ export interface ResolvedConfig {
   zoom_factor: number;
   multi_file: boolean;
   batch: number;
+}
+
+// ─── Stats ────────────────────────────────────────────────────────────────────
+
+export interface VideoStats {
+  frame_count: number;
+  duration_sec: number;
+  keystrokes: number;
+  typos_count: number;
+  payoff_timestamp: number;
+  segment_breakdown: Record<string, number>;
+  wpm_actual: number;
 }

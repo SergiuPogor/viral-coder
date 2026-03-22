@@ -1,4 +1,4 @@
-import type { CodeSegment, KeystrokeEvent, KeystrokeEventType, ResolvedConfig, SupportedLanguage } from '../types.js';
+import type { CodeSegment, KeystrokeEvent, KeystrokeEventType, ResolvedConfig, SpeedRamp, SupportedLanguage } from '../types.js';
 import { getLanguageProfile } from '../config/languages.js';
 
 // ─── Adjacent Key Map (full QWERTY) ───────────────────────────────────────────
@@ -38,8 +38,57 @@ function randBetween(min: number, max: number): number {
 }
 
 function wpmToDelayMs(wpm: number): number {
-  // WPM * 5 chars/word → chars/min → chars/sec → ms/char
   return 60000 / (wpm * 5);
+}
+
+// ─── Speed Ramp Functions ────────────────────────────────────────────────────
+
+function applySpeedRamp(
+  baseWpm: number,
+  progress: number,
+  rampMode: SpeedRamp,
+  config: ResolvedConfig,
+  isPayoff: boolean,
+): number {
+  const { typing, virality } = config;
+
+  // Payoff always gets dramatic slowdown
+  if (isPayoff || progress >= 0.95) {
+    return baseWpm * virality.payoff_slowdown;
+  }
+
+  switch (rampMode) {
+    case 'natural': {
+      // Original behavior: ramp up in middle section
+      if (progress >= typing.ramp_start && progress <= typing.ramp_end) {
+        return baseWpm * typing.wpm_ramp_factor;
+      }
+      return baseWpm;
+    }
+    case 'rocket': {
+      // 5x fast start, gradually slowing to normal, then slow payoff
+      if (progress < 0.3) {
+        return baseWpm * 5;
+      } else if (progress < 0.7) {
+        // Linear deceleration from 5x to 1x
+        const t = (progress - 0.3) / 0.4;
+        return baseWpm * (5 - 4 * t);
+      }
+      return baseWpm;
+    }
+    case 'dramatic': {
+      // Normal speed → sudden pause at 80% → resume at normal
+      if (progress >= 0.78 && progress < 0.82) {
+        return baseWpm * 0.15; // near-stop
+      }
+      if (progress >= typing.ramp_start && progress <= typing.ramp_end) {
+        return baseWpm * typing.wpm_ramp_factor;
+      }
+      return baseWpm;
+    }
+    default:
+      return baseWpm;
+  }
 }
 
 // ─── Builder ──────────────────────────────────────────────────────────────────
@@ -48,12 +97,14 @@ export interface BuildTimelineOptions {
   segments: CodeSegment[];
   config: ResolvedConfig;
   language: SupportedLanguage;
+  maxDurationMs?: number; // for preview mode
 }
 
 export function buildTimeline(opts: BuildTimelineOptions): KeystrokeEvent[] {
-  const { segments, config, language } = opts;
+  const { segments, config, language, maxDurationMs } = opts;
   const { typing } = config;
   const profile = getLanguageProfile(language);
+  const rampMode = typing.speed_ramp ?? 'natural';
 
   const events: KeystrokeEvent[] = [];
   let timestamp = 0;
@@ -62,6 +113,9 @@ export function buildTimeline(opts: BuildTimelineOptions): KeystrokeEvent[] {
   let charsSoFar = 0;
 
   for (const segment of segments) {
+    // Check duration limit for preview mode
+    if (maxDurationMs && timestamp >= maxDurationMs) break;
+
     // Pause before segment
     if (segment.pauseBefore > 0) {
       events.push({
@@ -78,21 +132,13 @@ export function buildTimeline(opts: BuildTimelineOptions): KeystrokeEvent[] {
     const chars = segment.content.split('');
 
     for (let ci = 0; ci < chars.length; ci++) {
+      if (maxDurationMs && timestamp >= maxDurationMs) break;
+
       const char = chars[ci];
       if (!char) continue;
 
       const progress = (charsSoFar + ci) / totalChars;
-
-      // Speed ramp
-      let wpm = segment.wpm;
-      if (progress >= typing.ramp_start && progress <= typing.ramp_end) {
-        wpm = wpm * typing.wpm_ramp_factor;
-      }
-      // Payoff slowdown
-      if (progress >= 0.95 || segment.isPayoff) {
-        wpm = segment.wpm * config.virality.payoff_slowdown;
-      }
-
+      const wpm = applySpeedRamp(segment.wpm, progress, rampMode, config, segment.isPayoff);
       let baseDelay = wpmToDelayMs(Math.max(wpm, 10));
 
       // Rhythm burst simulation: 4-5 fast chars then micro-pause
@@ -106,7 +152,6 @@ export function buildTimeline(opts: BuildTimelineOptions): KeystrokeEvent[] {
         const typoChar = getTypoChar(char);
         const correctionDelay = randBetween(...typing.typo_correction_delay) * 1000;
 
-        // Type wrong char
         events.push({
           type: 'typo',
           char: typoChar,
@@ -118,7 +163,6 @@ export function buildTimeline(opts: BuildTimelineOptions): KeystrokeEvent[] {
         });
         timestamp += baseDelay;
 
-        // Pause before correcting
         events.push({
           type: 'pause',
           delayMs: correctionDelay,
@@ -129,7 +173,6 @@ export function buildTimeline(opts: BuildTimelineOptions): KeystrokeEvent[] {
         });
         timestamp += correctionDelay;
 
-        // Backspace
         events.push({
           type: 'backspace',
           delayMs: 80,
@@ -153,7 +196,7 @@ export function buildTimeline(opts: BuildTimelineOptions): KeystrokeEvent[] {
       });
       timestamp += baseDelay;
 
-      // Autocomplete interaction (after typing 3 chars of a word)
+      // Autocomplete interaction
       if (
         typing.show_autocomplete &&
         Math.random() < profile.autocompleteRate * 0.15 &&
@@ -183,7 +226,7 @@ export function buildTimeline(opts: BuildTimelineOptions): KeystrokeEvent[] {
         timestamp += acDelay * 0.4;
       }
 
-      // Cursor hover (occasional — drift up to inspect earlier code)
+      // Cursor hover
       if (typing.cursor_hover && Math.random() < 0.008 && !segment.isPayoff) {
         const hoverDelay = randBetween(600, 1500);
         events.push({

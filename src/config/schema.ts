@@ -3,9 +3,10 @@ import { z } from 'zod';
 const ThemeSchema = z.enum(['tokyo-night', 'dracula', 'catppuccin', 'github-dark', 'monokai-pro', 'one-dark', 'nord', 'gruvbox']);
 const PlatformSchema = z.enum(['tiktok', 'reels', 'shorts', 'all']);
 const HookStyleSchema = z.enum(['bold_center', 'top_ticker', 'slide_in']);
-const CaptionModeSchema = z.enum(['explain', 'hype', 'none']);
-const KeystrokePackSchema = z.enum(['cherry_mx_blue', 'topre', 'membrane']);
+const CaptionModeSchema = z.enum(['explain', 'code', 'none']);
+const KeystrokePackSchema = z.enum(['cherry_mx_blue', 'cherry_mx_brown', 'laptop_keyboard', 'mechanical_soft']);
 const TerminalPositionSchema = z.enum(['split_bottom', 'fullscreen']);
+const SpeedRampSchema = z.enum(['natural', 'rocket', 'dramatic']);
 
 export const ConfigSchema = z.object({
   ide: z.object({
@@ -38,6 +39,7 @@ export const ConfigSchema = z.object({
     cursor_hover: z.boolean().default(true),
     show_autocomplete: z.boolean().default(true),
     autocomplete_accept_delay: z.tuple([z.number(), z.number()]).default([0.6, 1.4]),
+    speed_ramp: SpeedRampSchema.default('natural'),
   }).default({}),
 
   virality: z.object({

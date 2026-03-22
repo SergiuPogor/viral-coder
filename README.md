@@ -1,34 +1,97 @@
 # viral-coder
 
-> **Automated viral coding video generator** — give it a code file, get a TikTok-ready MP4 with realistic typing, keyboard sounds, speed ramps, hook overlays, and payoff moments. No screen recording. No human needed.
+> **Automated viral coding video generator** -- give it a code file, get a TikTok-ready MP4 with realistic typing, keyboard sounds, speed ramps, hook overlays, captions, and payoff moments. No screen recording. No human needed.
 
 <p align="center">
   <img src="https://img.shields.io/npm/v/viral-coder?style=for-the-badge&color=blue" alt="npm version">
   <img src="https://img.shields.io/npm/dm/viral-coder?style=for-the-badge&color=brightgreen" alt="npm downloads">
   <img src="https://img.shields.io/badge/node-%3E%3D20-green?style=for-the-badge" alt="node">
   <img src="https://img.shields.io/badge/languages-21-orange?style=for-the-badge" alt="languages">
+  <img src="https://img.shields.io/badge/themes-8-purple?style=for-the-badge" alt="themes">
+  <img src="https://img.shields.io/badge/audio%20packs-4-red?style=for-the-badge" alt="audio packs">
+  <img src="https://img.shields.io/badge/caption%20modes-3-yellow?style=for-the-badge" alt="caption modes">
+  <img src="https://img.shields.io/badge/speed%20ramps-3-cyan?style=for-the-badge" alt="speed ramps">
+  <img src="https://img.shields.io/badge/tests-99-brightgreen?style=for-the-badge" alt="tests">
   <img src="https://img.shields.io/badge/license-MIT-purple?style=for-the-badge" alt="license">
 </p>
 
 ---
 
-## ✨ What It Does
+## What It Does
 
 ```
 viral-coder generate src/auth.ts
 ```
 
 1. **Reads** your code file
-2. **Analyzes** it — detects language, finds imports, functions, the payoff moment
-3. **Builds a timeline** — human-like typing with rhythm bursts, typos, thinking pauses, speed ramps
-4. **Renders** it in a real VS Code-looking IDE (Monaco Editor via Playwright)
-5. **Composites** the final vertical MP4 with FFmpeg — hook overlay, progress bar, watermark
+2. **Analyzes** it -- detects language, finds imports, functions, the payoff moment
+3. **Builds a timeline** -- human-like typing with rhythm bursts, typos, thinking pauses, speed ramps
+4. **Generates audio** -- mechanical keyboard clicks synced to keystrokes + optional lofi background music
+5. **Renders** it in a real VS Code-looking IDE (Monaco Editor via Playwright)
+6. **Burns captions** -- explain what the code does, or show code as subtitles
+7. **Composites** the final vertical MP4 with FFmpeg -- hook overlay, progress bar, watermark, audio
 
 The output is a 9:16 vertical video ready to post on TikTok, Instagram Reels, or YouTube Shorts.
 
 ---
 
-## 🌍 21 Languages Supported
+## Architecture
+
+```
++-------------------------------------------------------------------+
+|                          viral-coder                               |
++-------------------------------------------------------------------+
+|                                                                    |
+|   src/cli.ts              CLI -- 8 commands (generate, batch,      |
+|                           watch, thumbnail, info, themes, langs,   |
+|                           init)                                    |
+|                                                                    |
+|   src/types.ts            Full TypeScript type system               |
+|   src/session.ts          Session state management                  |
+|                                                                    |
+|   src/config/                                                      |
+|     schema.ts             Zod config validation                    |
+|     defaults.ts           All default values + resolution map      |
+|     languages.ts          21 languages: detection, profiles, hooks |
+|                                                                    |
+|   src/analyzer/                                                    |
+|     index.ts              AST-less code segment analyzer           |
+|                                                                    |
+|   src/timeline/                                                    |
+|     builder.ts            Keystroke event generator with 3 speed   |
+|                           ramp modes (natural, rocket, dramatic)   |
+|                                                                    |
+|   src/audio/                                                       |
+|     keyboard.ts           Keystroke sound synthesis (4 packs)      |
+|     music.ts              Lofi background music generator          |
+|     mixer.ts              Audio mixer (keystrokes + music)         |
+|                                                                    |
+|   src/captions/                                                    |
+|     generator.ts          SRT/ASS caption generation (3 modes)     |
+|     renderer.ts           FFmpeg drawtext caption burn-in          |
+|                                                                    |
+|   src/virality/                                                    |
+|     hook.ts               Smart hook generator (content heuristics)|
+|                                                                    |
+|   src/thumbnail/                                                   |
+|     index.ts              Thumbnail PNG generator                  |
+|                                                                    |
+|   src/renderer/                                                    |
+|     index.ts              Playwright + Monaco frame capture        |
+|     editor.html           VS Code chrome replica (8 themes)        |
+|                                                                    |
+|   src/compositor/                                                  |
+|     index.ts              FFmpeg video assembly + multi-platform   |
+|                                                                    |
+|   src/utils/                                                       |
+|     glob.ts               File glob for batch mode                 |
+|                                                                    |
++-------------------------------------------------------------------+
+```
+
+---
+
+## 21 Languages Supported
 
 Language detection is automatic based on file extension:
 
@@ -46,11 +109,11 @@ Language detection is automatic based on file extension:
 | YAML | `.yaml` `.yml` | Markdown | `.md` |
 | Plain Text | `*` | | |
 
-Each language has its own **typing profile** — Rust types slower (more thinking pauses), Python types faster (cleaner syntax), Java triggers more autocomplete events.
+Each language has its own **typing profile** -- Rust types slower (more thinking pauses), Python types faster (cleaner syntax), Java triggers more autocomplete events.
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -79,15 +142,21 @@ viral-coder generate src/auth.ts \
   --hook "POV: You just wrote the cleanest auth middleware" \
   --platform tiktok \
   --watermark "@yourhandle" \
+  --speed-ramp dramatic \
+  --captions explain \
+  --wpm 80 \
+  --resolution 1080p \
+  --music-file ./lofi.mp3 \
+  --stats \
   --output ./my-video.mp4
 ```
 
 ---
 
-## 🎨 8 IDE Themes
+## 8 IDE Themes
 
 ```
---theme tokyo-night     # Default — deep blue with neon accents
+--theme tokyo-night     # Default -- deep blue with neon accents
 --theme dracula         # Classic purple/pink
 --theme catppuccin      # Modern pastel
 --theme github-dark     # GitHub's dark mode
@@ -99,26 +168,58 @@ viral-coder generate src/auth.ts \
 
 ---
 
-## 🧠 The Virality Engine
+## 4 Audio Packs
 
-### Hook Overlay (0–2.5s)
+Realistic keyboard click sounds synthesized via FFmpeg `aevalsrc`:
 
-Bold text overlay before typing starts. Auto-generated per-language if you don't provide one:
+```
+--keystroke-pack cherry_mx_blue     # Clicky mechanical (default)
+--keystroke-pack cherry_mx_brown    # Tactile mechanical
+--keystroke-pack laptop_keyboard    # Quiet laptop keys
+--keystroke-pack mechanical_soft    # Soft mechanical
+```
 
-- TypeScript: *"TypeScript types that junior devs never learn"*
-- Python: *"Python one-liner that replaces 10 lines"*
-- Rust: *"Rust code that would crash in any other language"*
+Optional background music:
+- Use `--music-file ./your-track.mp3` to bring your own music
+- Or let the built-in lofi synth generate ambient background audio
 
-### Speed Ramp
+---
 
-- Starts at readable speed (65 WPM)
-- **3.5x faster** through imports and boilerplate (35%–75% of video)
-- **Dramatic slowdown** at the payoff moment (last 5%)
+## 3 Caption Modes
+
+```
+--captions none      # No captions (default)
+--captions explain   # "Importing dependencies", "Defining function", etc.
+--captions code      # Show the actual code being typed
+```
+
+Captions are burned into the video as semi-transparent black pills with white bold text at the bottom of the screen.
+
+---
+
+## 3 Speed Ramp Modes
+
+```
+--speed-ramp natural    # Default -- fast through middle, slow at payoff
+--speed-ramp rocket     # 5x fast start, gradually slowing to payoff
+--speed-ramp dramatic   # Normal speed, sudden near-stop at 80%, resume
+```
+
+---
+
+## The Virality Engine
+
+### Smart Hook Generation
+
+Automatically generates contextual hooks based on code content:
+- Uses async/await? -> "Async pattern most devs get wrong"
+- Has JWT/auth code? -> "Auth middleware that actually works"
+- Uses O(1) data structures? -> "O(1) trick nobody teaches"
+- Short code? -> "10 lines that replace 100"
 
 ### Payoff Detection
 
 Auto-detects the "climax" of your code:
-
 1. Last `return` statement in the last function
 2. `console.log` / `print` near the end
 3. Test assertion (`expect()`, `assert()`)
@@ -126,26 +227,109 @@ Auto-detects the "climax" of your code:
 
 ### Human Simulation
 
-- **Rhythm bursts**: 4–5 chars fast, micro-pause, continue
+- **Rhythm bursts**: 4-5 chars fast, micro-pause, continue
 - **Typos**: 4% rate with adjacent-key typo map + realistic correction delay
-- **Thinking pauses**: 800–2000ms before new function blocks
+- **Thinking pauses**: 800-2000ms before new function blocks
 - **Autocomplete**: triggers naturally based on language profile
 
 ---
 
-## 📊 Commands
+## Commands
 
 | Command | Description |
 |---------|-------------|
 | `viral-coder generate <file>` | Generate a video from a source file |
-| `viral-coder info <file>` | Analyze a file — show segments, duration, hook suggestions |
+| `viral-coder batch <glob>` | Generate one video per matching file |
+| `viral-coder watch <file>` | Watch file for changes, regenerate on save |
+| `viral-coder thumbnail <file>` | Generate a thumbnail PNG |
+| `viral-coder info <file>` | Analyze a file -- show segments, duration, hook suggestions |
 | `viral-coder themes` | List available IDE themes |
 | `viral-coder languages` | List supported languages and extensions |
 | `viral-coder init` | Create a config file in current directory |
 
 ---
 
-## ⚙️ Configuration
+## CLI Flags
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--theme <name>` | IDE theme | `tokyo-night` |
+| `--platform <name>` | `tiktok`, `reels`, `shorts`, or `all` | `tiktok` |
+| `--hook <text>` | Hook overlay text | auto-generated |
+| `--output <path>` | Output MP4 path | `./output/video.mp4` |
+| `--watermark <text>` | Watermark (e.g. `@handle`) | none |
+| `--language <lang>` | Force language detection | auto |
+| `--fps <n>` | Frames per second | `60` |
+| `--wpm <n>` | Base words per minute | `65` |
+| `--speed-ramp <mode>` | `natural`, `rocket`, `dramatic` | `natural` |
+| `--resolution <res>` | `720p`, `1080p`, `4k` | `1080p` |
+| `--captions <mode>` | `none`, `explain`, `code` | `none` |
+| `--music-file <path>` | Background music MP3/WAV | none |
+| `--preview` | 10-second low-res preview | off |
+| `--stats` | Write stats JSON file | off |
+| `--no-hook` | Disable hook overlay | |
+| `--no-progress` | Disable progress bar | |
+
+---
+
+## Multi-Platform Export
+
+When `--platform all` is passed, generates 3 separate videos:
+- `output-tiktok.mp4` (1080x1920, 30fps, 8Mbps)
+- `output-reels.mp4` (1080x1920, 30fps, 10Mbps)
+- `output-shorts.mp4` (1080x1920, 60fps, 12Mbps)
+
+---
+
+## Batch Mode
+
+```bash
+viral-coder batch "src/**/*.ts" --output-dir ./videos
+```
+
+Generates one video per matching file with progress tracking.
+
+---
+
+## Watch Mode
+
+```bash
+viral-coder watch src/auth.ts --preview
+```
+
+Watches the file for changes and regenerates the video on save. Great for rapid iteration.
+
+---
+
+## Thumbnail Generation
+
+```bash
+viral-coder thumbnail src/auth.ts --hook "Watch this" --output thumb.png
+```
+
+Generates a static PNG thumbnail from the code with a large bold title overlay.
+
+---
+
+## Stats Output
+
+With `--stats`, writes a JSON file alongside the video:
+
+```json
+{
+  "frame_count": 847,
+  "duration_sec": 28.23,
+  "keystrokes": 412,
+  "typos_count": 16,
+  "payoff_timestamp": 25.1,
+  "segment_breakdown": { "IMPORT": 2, "FUNCTION_DEF": 3, "LOGIC_BLOCK": 8 },
+  "wpm_actual": 62.3
+}
+```
+
+---
+
+## Configuration
 
 Create `viral-coder.config.json`:
 
@@ -153,7 +337,7 @@ Create `viral-coder.config.json`:
 {
   "ide": { "theme": "tokyo-night", "font": "JetBrains Mono", "font_size": 15 },
   "platform": { "platform": "tiktok", "fps": 60 },
-  "typing": { "wpm_base": 65, "typo_rate": 0.04 },
+  "typing": { "wpm_base": 65, "typo_rate": 0.04, "speed_ramp": "natural" },
   "virality": {
     "hook_enabled": true,
     "hook_text": "This code pattern changes everything",
@@ -166,46 +350,50 @@ Create `viral-coder.config.json`:
 
 ---
 
-## 🏗️ Architecture
-
-```
-src/
-  cli.ts                    # Commander.js CLI — 5 commands
-  types.ts                  # Full TypeScript type system
-  session.ts                # Session state management
-  config/
-    schema.ts               # Zod config validation
-    defaults.ts             # All default values
-    languages.ts            # 21 languages: detection, profiles, hooks
-  analyzer/
-    index.ts                # AST-less code segment analyzer
-  timeline/
-    builder.ts              # Keystroke event generator with human simulation
-  renderer/
-    index.ts                # Playwright + Monaco frame capture
-    editor.html             # Full VS Code chrome replica (8 themes)
-  compositor/
-    index.ts                # FFmpeg video assembly
-```
-
----
-
-## 📱 Platform Profiles
+## Platform Profiles
 
 | Platform | Resolution | FPS | Max Duration | Bitrate |
 |----------|-----------|-----|-------------|---------|
-| TikTok | 1080×1920 | 30 | 60s | 8 Mbps |
-| Reels | 1080×1920 | 30 | 90s | 10 Mbps |
-| Shorts | 1080×1920 | 60 | 60s | 12 Mbps |
+| TikTok | 1080x1920 | 30 | 60s | 8 Mbps |
+| Reels | 1080x1920 | 30 | 90s | 10 Mbps |
+| Shorts | 1080x1920 | 60 | 60s | 12 Mbps |
 
 ---
 
-## 🤝 Contributing
+## IDE Chrome Features
+
+The rendered VS Code clone includes:
+- Full 8-theme support with proper syntax highlighting
+- Title bar with traffic light dots and tabbed files
+- Secondary tab showing language-appropriate config file (package.json, Cargo.toml, etc.)
+- File tree sidebar with language-appropriate icons
+- Git diff badge (+N -0) updating as code is typed
+- Status bar with branch, language, line count, cursor position, encoding
+- Smooth cursor blink animation
+- Smooth scroll reveal as typing progresses
+- Theme-colored progress bar at the top
+
+---
+
+## Roadmap (v2)
+
+- AI-powered code explanation captions (LLM integration)
+- Custom Monaco themes from VS Code marketplace
+- Multi-file video sequences (tab switching)
+- Terminal animation with real command output
+- Background blur/gradient effects
+- Zoom-on-key-lines during payoff moments
+- Direct upload to TikTok/Reels/Shorts APIs
+- Web UI for configuration
+
+---
+
+## Contributing
 
 Issues and PRs welcome.
 
 ---
 
-## 📜 License
+## License
 
-MIT © Serghei Pogor
+MIT (c) Serghei Pogor
