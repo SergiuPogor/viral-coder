@@ -116,7 +116,7 @@ body {
   flex: 1;
   overflow: hidden;
   position: relative;
-  padding: var(--editor-v-pad, 192px) 0;
+  padding: var(--editor-pad-top, 96px) 0 var(--editor-pad-bottom, 538px) 0;
 }
 
 #monaco-container {
@@ -426,8 +426,8 @@ window.initEditor = function(cfg) {
   document.getElementById('status-font-size').textContent = (cfg.fontSize || 15) + 'px';
 
   // Apply vertical padding (safe area for TikTok/Reels overlays)
-  const vpad = cfg.editorVpad || 192;
-  document.documentElement.style.setProperty('--editor-v-pad', vpad + 'px');
+  document.documentElement.style.setProperty('--editor-pad-top', (cfg.editorVpadTop || 96) + 'px');
+  document.documentElement.style.setProperty('--editor-pad-bottom', (cfg.editorVpadBottom || 538) + 'px');
 
   buildFileTree(cfg.filename || 'index.ts', cfg.language || 'typescript');
 
@@ -453,8 +453,8 @@ window.initEditor = function(cfg) {
         renderWhitespace: 'none',
         wordWrap: 'off',
         padding: { top: 16, bottom: 16 },
-        lineHeight: 1.75,
-        letterSpacing: 0.5,
+        lineHeight: 1.8,
+        letterSpacing: 0.6,
         contextmenu: false,
         automaticLayout: true,
         readOnly: false,

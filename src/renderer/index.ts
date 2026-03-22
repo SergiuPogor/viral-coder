@@ -157,16 +157,17 @@ export async function renderFrames(opts: RendererOptions): Promise<RendererResul
     return count + (seg.content.match(/\n/g) ?? []).length;
   }, 0) + 1;
 
-  // Use a fixed comfortable font size — Monaco scrolls naturally as typing progresses.
-  // Rule: ≤20 lines → 22px, ≤40 lines → 18px, else 15px (min visible at 1080p)
-  const cfgFont = config.ide.font_size ?? 15;
+  // Font size for 1080x1920 phone video — MUST be readable without zooming
+  // Rule: ≤15 lines → 48px, ≤25 lines → 38px, ≤40 lines → 32px, else 26px
   let finalFontSize: number;
-  if (sourceLines <= 20) {
-    finalFontSize = Math.max(cfgFont, 22);
+  if (sourceLines <= 15) {
+    finalFontSize = 48;
+  } else if (sourceLines <= 25) {
+    finalFontSize = 38;
   } else if (sourceLines <= 40) {
-    finalFontSize = Math.max(cfgFont, 18);
+    finalFontSize = 32;
   } else {
-    finalFontSize = Math.max(cfgFont, 15);
+    finalFontSize = 26;
   }
 
   // Wait for Monaco to load and initEditor to be available
@@ -182,7 +183,8 @@ export async function renderFrames(opts: RendererOptions): Promise<RendererResul
     font: config.ide.font,
     fontSize: finalFontSize,
     filename,
-    editorVpad: Math.round(vpHeight * 0.20),
+    editorVpadTop: Math.round(vpHeight * 0.10),
+    editorVpadBottom: Math.round(vpHeight * 0.28),
     language,
     monacoLanguage: getMonacoLanguage(language),
     languageLabel: LANGUAGE_LABELS[language] ?? 'Code',
