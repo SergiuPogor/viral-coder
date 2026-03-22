@@ -1,0 +1,40 @@
+{
+  "name": "viral-coder",
+  "version": "1.0.0",
+  "description": "Automated viral coding video generator — TikTok-ready MP4 from any code file",
+  "keywords": ["tiktok", "coding", "video", "automation", "ffmpeg", "playwright", "monaco"],
+  "license": "MIT",
+  "author": "Serghei Pogor <mediapronetsrl@gmail.com> (https://github.com/SergiuPogor)",
+  "homepage": "https://github.com/SergiuPogor/viral-coder",
+  "repository": { "type": "git", "url": "https://github.com/SergiuPogor/viral-coder.git" },
+  "type": "module",
+  "bin": { "viral-coder": "./bin/viral-coder.js" },
+  "files": ["bin", "src", "assets", "README.md", "LICENSE"],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "lint": "eslint src --ext .ts",
+    "postinstall": "playwright install chromium 2>/dev/null || true"
+  },
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "commander": "^12.1.0",
+    "cosmiconfig": "^9.0.0",
+    "execa": "^9.3.0",
+    "ora": "^8.1.0",
+    "playwright": "^1.44.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.0",
+    "@types/node": "^20.14.0",
+    "@typescript-eslint/eslint-plugin": "^7.13.0",
+    "@typescript-eslint/parser": "^7.13.0",
+    "eslint": "^8.57.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.0",
+    "typescript": "^5.5.0"
+  },
+  "engines": { "node": ">=20.0.0" }
+}

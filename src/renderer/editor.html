@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en" style="margin:0;padding:0;overflow:hidden;background:#1a1b26;">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1080">
+<title>viral-coder renderer</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  width: 1080px;
+  height: 1920px;
+  background: var(--bg, #1a1b26);
+  display: flex;
+  flex-direction: column;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  overflow: hidden;
+}
+
+/* ── Title bar ── */
+.titlebar {
+  height: 34px;
+  background: var(--titlebar-bg, #16161e);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 8px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border, #2a2b3d);
+}
+.titlebar-dots { display: flex; gap: 6px; }
+.dot { width: 12px; height: 12px; border-radius: 50%; }
+.dot-red { background: #ff5f57; }
+.dot-yellow { background: #febc2e; }
+.dot-green { background: #28c840; }
+.titlebar-tabs { display: flex; gap: 0; margin-left: 12px; flex: 1; }
+.tab {
+  padding: 6px 16px;
+  font-size: 12px;
+  color: var(--tab-inactive, #565f89);
+  border-right: 1px solid var(--border, #2a2b3d);
+  cursor: default;
+  white-space: nowrap;
+}
+.tab.active {
+  color: var(--tab-active, #c0caf5);
+  background: var(--bg, #1a1b26);
+  border-bottom: 2px solid var(--accent, #7aa2f7);
+}
+.titlebar-filename {
+  flex: 1;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted, #565f89);
+}
+
+/* ── Main area ── */
+.main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ── File tree sidebar ── */
+.sidebar {
+  width: 200px;
+  background: var(--sidebar-bg, #16161e);
+  border-right: 1px solid var(--border, #2a2b3d);
+  padding: 8px 0;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.sidebar-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-muted, #565f89);
+  padding: 4px 12px 8px;
+  text-transform: uppercase;
+}
+.tree-item {
+  padding: 3px 12px 3px 24px;
+  font-size: 12px;
+  color: var(--tree-item, #a9b1d6);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: default;
+}
+.tree-item.active {
+  background: var(--tree-active-bg, #1f2033);
+  color: var(--text, #c0caf5);
+}
+.tree-item .icon { font-size: 11px; width: 14px; }
+
+/* ── Editor area ── */
+.editor-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+.editor-area {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+#monaco-container {
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Terminal split ── */
+.terminal {
+  height: 220px;
+  background: var(--terminal-bg, #16161e);
+  border-top: 1px solid var(--border, #2a2b3d);
+  flex-shrink: 0;
+  display: none;
+  flex-direction: column;
+}
+.terminal.visible { display: flex; }
+.terminal-header {
+  height: 28px;
+  background: var(--titlebar-bg, #16161e);
+  border-bottom: 1px solid var(--border, #2a2b3d);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--text-muted, #565f89);
+}
+.terminal-body {
+  flex: 1;
+  padding: 8px 12px;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 13px;
+  color: var(--terminal-text, #9ece6a);
+  overflow: hidden;
+  white-space: pre-wrap;
+}
+
+/* ── Status bar ── */
+.statusbar {
+  height: 24px;
+  background: var(--accent, #7aa2f7);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 16px;
+  font-size: 11px;
+  color: var(--statusbar-text, #1a1b26);
+  flex-shrink: 0;
+}
+.statusbar-right { margin-left: auto; display: flex; gap: 12px; }
+
+/* ── Progress bar overlay ── */
+.progress-bar {
+  position: absolute;
+  top: 0; left: 0;
+  height: 2px;
+  background: var(--accent, #7aa2f7);
+  width: 0%;
+  transition: width 0.1s linear;
+  z-index: 100;
+}
+
+/* ── Hook overlay ── */
+.hook-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.82);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+  text-align: center;
+  padding: 40px;
+}
+.hook-overlay.visible { opacity: 1; }
+.hook-text {
+  font-size: 52px;
+  font-weight: 900;
+  color: #ffffff;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  text-shadow: 0 2px 32px rgba(122, 162, 247, 0.5);
+  max-width: 900px;
+}
+.hook-emoji { font-size: 64px; display: block; margin-bottom: 16px; }
+.hook-sub {
+  font-size: 26px;
+  color: rgba(255,255,255,0.7);
+  margin-top: 16px;
+}
+
+/* ── Monaco font load ── */
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('data:font/woff2;base64,PLACEHOLDER') format('woff2');
+}
+</style>
+
+<!-- Monaco CDN -->
+<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.48.0/min/vs/loader.js"></script>
+</head>
+<body>
+
+<!-- Hook overlay -->
+<div class="hook-overlay" id="hook">
+  <div>
+    <span class="hook-emoji" id="hook-emoji">💡</span>
+    <div class="hook-text" id="hook-text">Loading...</div>
+    <div class="hook-sub" id="hook-sub"></div>
+  </div>
+</div>
+
+<!-- Title bar -->
+<div class="titlebar">
+  <div class="titlebar-dots">
+    <div class="dot dot-red"></div>
+    <div class="dot dot-yellow"></div>
+    <div class="dot dot-green"></div>
+  </div>
+  <div class="titlebar-tabs">
+    <div class="tab active" id="active-tab">index.ts</div>
+  </div>
+  <div class="titlebar-filename" id="window-title">viral-coder — VS Code</div>
+</div>
+
+<!-- Main -->
+<div class="main">
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-title">Explorer</div>
+    <div id="file-tree"></div>
+  </div>
+
+  <!-- Editor -->
+  <div class="editor-wrap">
+    <div class="progress-bar" id="progress-bar"></div>
+    <div class="editor-area">
+      <div id="monaco-container"></div>
+    </div>
+    <!-- Terminal (hidden by default) -->
+    <div class="terminal" id="terminal">
+      <div class="terminal-header">⚡ Terminal</div>
+      <div class="terminal-body" id="terminal-body"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Status bar -->
+<div class="statusbar" id="statusbar">
+  <span id="status-branch">⎇ main</span>
+  <span id="status-lang">TypeScript</span>
+  <div class="statusbar-right">
+    <span id="status-pos">Ln 1, Col 1</span>
+    <span id="status-enc">UTF-8</span>
+    <span id="status-theme">Tokyo Night</span>
+  </div>
+</div>
+
+<script>
+// ── Theme definitions ────────────────────────────────────────────────────────
+const THEMES = {
+  'tokyo-night': {
+    bg: '#1a1b26', titlebarBg: '#16161e', sidebarBg: '#16161e',
+    border: '#2a2b3d', accent: '#7aa2f7', text: '#c0caf5',
+    textMuted: '#565f89', tabActive: '#c0caf5', tabInactive: '#565f89',
+    treeItem: '#a9b1d6', treeActiveBg: '#1f2033',
+    terminalBg: '#16161e', terminalText: '#9ece6a',
+    statusbarText: '#1a1b26', monacoTheme: 'vs-dark',
+  },
+  'dracula': {
+    bg: '#282a36', titlebarBg: '#21222c', sidebarBg: '#21222c',
+    border: '#44475a', accent: '#bd93f9', text: '#f8f8f2',
+    textMuted: '#6272a4', tabActive: '#f8f8f2', tabInactive: '#6272a4',
+    treeItem: '#f8f8f2', treeActiveBg: '#44475a',
+    terminalBg: '#21222c', terminalText: '#50fa7b',
+    statusbarText: '#282a36', monacoTheme: 'vs-dark',
+  },
+  'catppuccin': {
+    bg: '#1e1e2e', titlebarBg: '#181825', sidebarBg: '#181825',
+    border: '#313244', accent: '#cba6f7', text: '#cdd6f4',
+    textMuted: '#6c7086', tabActive: '#cdd6f4', tabInactive: '#6c7086',
+    treeItem: '#bac2de', treeActiveBg: '#2a2b3d',
+    terminalBg: '#181825', terminalText: '#a6e3a1',
+    statusbarText: '#1e1e2e', monacoTheme: 'vs-dark',
+  },
+  'github-dark': {
+    bg: '#0d1117', titlebarBg: '#010409', sidebarBg: '#161b22',
+    border: '#30363d', accent: '#58a6ff', text: '#e6edf3',
+    textMuted: '#7d8590', tabActive: '#e6edf3', tabInactive: '#7d8590',
+    treeItem: '#c9d1d9', treeActiveBg: '#1c2128',
+    terminalBg: '#010409', terminalText: '#3fb950',
+    statusbarText: '#e6edf3', monacoTheme: 'vs-dark',
+  },
+  'monokai-pro': {
+    bg: '#2d2a2e', titlebarBg: '#221f22', sidebarBg: '#221f22',
+    border: '#403e41', accent: '#ab9df2', text: '#fcfcfa',
+    textMuted: '#727072', tabActive: '#fcfcfa', tabInactive: '#727072',
+    treeItem: '#fcfcfa', treeActiveBg: '#3a3a3d',
+    terminalBg: '#221f22', terminalText: '#a9dc76',
+    statusbarText: '#2d2a2e', monacoTheme: 'vs-dark',
+  },
+  'one-dark': {
+    bg: '#282c34', titlebarBg: '#21252b', sidebarBg: '#21252b',
+    border: '#181a1f', accent: '#61afef', text: '#abb2bf',
+    textMuted: '#5c6370', tabActive: '#abb2bf', tabInactive: '#5c6370',
+    treeItem: '#abb2bf', treeActiveBg: '#2c313a',
+    terminalBg: '#21252b', terminalText: '#98c379',
+    statusbarText: '#282c34', monacoTheme: 'vs-dark',
+  },
+  'nord': {
+    bg: '#2e3440', titlebarBg: '#242933', sidebarBg: '#242933',
+    border: '#3b4252', accent: '#88c0d0', text: '#eceff4',
+    textMuted: '#4c566a', tabActive: '#eceff4', tabInactive: '#4c566a',
+    treeItem: '#d8dee9', treeActiveBg: '#3b4252',
+    terminalBg: '#242933', terminalText: '#a3be8c',
+    statusbarText: '#2e3440', monacoTheme: 'vs-dark',
+  },
+  'gruvbox': {
+    bg: '#282828', titlebarBg: '#1d2021', sidebarBg: '#1d2021',
+    border: '#3c3836', accent: '#83a598', text: '#ebdbb2',
+    textMuted: '#928374', tabActive: '#ebdbb2', tabInactive: '#928374',
+    treeItem: '#d5c4a1', treeActiveBg: '#32302f',
+    terminalBg: '#1d2021', terminalText: '#b8bb26',
+    statusbarText: '#282828', monacoTheme: 'vs-dark',
+  },
+};
+
+let editor = null;
+let currentConfig = {};
+
+function applyTheme(themeName) {
+  const t = THEMES[themeName] || THEMES['tokyo-night'];
+  const root = document.documentElement;
+  root.style.setProperty('--bg', t.bg);
+  root.style.setProperty('--titlebar-bg', t.titlebarBg);
+  root.style.setProperty('--sidebar-bg', t.sidebarBg);
+  root.style.setProperty('--border', t.border);
+  root.style.setProperty('--accent', t.accent);
+  root.style.setProperty('--text', t.text);
+  root.style.setProperty('--text-muted', t.textMuted);
+  root.style.setProperty('--tab-active', t.tabActive);
+  root.style.setProperty('--tab-inactive', t.tabInactive);
+  root.style.setProperty('--tree-item', t.treeItem);
+  root.style.setProperty('--tree-active-bg', t.treeActiveBg);
+  root.style.setProperty('--terminal-bg', t.terminalBg);
+  root.style.setProperty('--terminal-text', t.terminalText);
+  root.style.setProperty('--statusbar-text', t.statusbarText);
+  document.body.style.background = t.bg;
+  return t.monacoTheme;
+}
+
+function buildFileTree(filename, language) {
+  const icons = {
+    typescript: '📄', javascript: '📄', python: '🐍', rust: '🦀',
+    go: '🔵', java: '☕', cpp: '⚙️', c: '⚙️', csharp: '💜',
+    php: '🐘', ruby: '💎', swift: '🍎', kotlin: '🟣',
+    shell: '🖥️', sql: '🗃️', html: '🌐', css: '🎨',
+    json: '📋', yaml: '📋', markdown: '📝', plaintext: '📄',
+  };
+  const icon = icons[language] || '📄';
+  const tree = document.getElementById('file-tree');
+  if (!tree) return;
+  tree.innerHTML = `
+    <div class="tree-item" style="padding-left:12px;color:var(--text-muted)">📁 src</div>
+    <div class="tree-item active">${icon} ${filename}</div>
+    <div class="tree-item" style="opacity:0.4">📄 package.json</div>
+    <div class="tree-item" style="opacity:0.4">📄 README.md</div>
+    <div class="tree-item" style="opacity:0.4">📁 tests</div>
+  `;
+}
+
+// Called from Playwright before typing starts
+window.initEditor = function(cfg) {
+  currentConfig = cfg;
+  const monacoTheme = applyTheme(cfg.theme);
+
+  document.getElementById('active-tab').textContent = cfg.filename || 'index.ts';
+  document.getElementById('window-title').textContent = `${cfg.filename || 'index.ts'} — viral-coder`;
+  document.getElementById('status-lang').textContent = cfg.languageLabel || 'JavaScript';
+  document.getElementById('status-theme').textContent = cfg.theme || 'tokyo-night';
+
+  buildFileTree(cfg.filename || 'index.ts', cfg.language || 'typescript');
+
+  if (!cfg.showSidebar) {
+    document.getElementById('sidebar').style.display = 'none';
+  }
+
+  return new Promise((resolve) => {
+    require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.48.0/min/vs' } });
+    require(['vs/editor/editor.main'], function() {
+      editor = monaco.editor.create(document.getElementById('monaco-container'), {
+        value: '',
+        language: cfg.monacoLanguage || 'typescript',
+        theme: monacoTheme,
+        fontSize: cfg.fontSize || 15,
+        fontFamily: `'${cfg.font || 'JetBrains Mono'}', 'Fira Code', 'Cascadia Code', monospace`,
+        fontLigatures: true,
+        lineNumbers: cfg.showLineNumbers !== false ? 'on' : 'off',
+        minimap: { enabled: false },
+        scrollbar: { vertical: 'hidden', horizontal: 'hidden' },
+        overviewRulerLanes: 0,
+        renderLineHighlight: 'all',
+        renderWhitespace: 'none',
+        wordWrap: 'off',
+        padding: { top: 16, bottom: 16 },
+        lineHeight: 1.7,
+        letterSpacing: 0.3,
+        contextmenu: false,
+        automaticLayout: true,
+        readOnly: false,
+        hideCursorInOverviewRuler: true,
+        guides: {
+          indentation: cfg.indentGuides !== false,
+          bracketPairs: cfg.bracketPairs !== false,
+        },
+      });
+
+      // Keep editor focused
+      editor.focus();
+      resolve(true);
+    });
+  });
+};
+
+// Type a single character
+window.typeChar = function(char) {
+  if (!editor) return;
+  if (char === '\n') {
+    editor.trigger('keyboard', 'type', { text: '\n' });
+  } else if (char === '\t') {
+    editor.trigger('keyboard', 'tab', {});
+  } else {
+    editor.trigger('keyboard', 'type', { text: char });
+  }
+  // Auto-scroll to cursor
+  editor.revealPositionInCenter(editor.getPosition());
+};
+
+window.typeBackspace = function() {
+  if (!editor) return;
+  editor.trigger('keyboard', 'deleteLeft', {});
+};
+
+window.setProgress = function(pct) {
+  const bar = document.getElementById('progress-bar');
+  if (bar) bar.style.width = Math.min(pct * 100, 100) + '%';
+};
+
+window.showHook = function(text, emoji, sub) {
+  const el = document.getElementById('hook');
+  const textEl = document.getElementById('hook-text');
+  const emojiEl = document.getElementById('hook-emoji');
+  const subEl = document.getElementById('hook-sub');
+  if (textEl) textEl.textContent = text;
+  if (emojiEl) emojiEl.textContent = emoji || '💡';
+  if (subEl) subEl.textContent = sub || '';
+  if (el) el.classList.add('visible');
+};
+
+window.hideHook = function() {
+  const el = document.getElementById('hook');
+  if (el) el.classList.remove('visible');
+};
+
+window.showTerminal = function(output) {
+  const term = document.getElementById('terminal');
+  if (term) term.classList.add('visible');
+  const body = document.getElementById('terminal-body');
+  if (body) body.textContent = '$ ' + (window._termCmd || '') + '\n' + output;
+};
+
+window.updateStatusPos = function(line, col) {
+  const el = document.getElementById('status-pos');
+  if (el) el.textContent = `Ln ${line}, Col ${col}`;
+};
+</script>
+</body>
+</html>
