@@ -109,7 +109,7 @@ export async function renderFrames(opts: RendererOptions): Promise<RendererResul
   const EDITOR_VERTICAL_PADDING = 64; // Monaco top+bottom padding
   const LINE_HEIGHT_RATIO = 1.7;
 
-  const availableEditorHeight = vpHeight - TITLEBAR_H - STATUSBAR_H - EDITOR_VERTICAL_PADDING;
+  const availableEditorHeight = vpHeight - TITLEBAR_H - STATUSBAR_H - 2 * Math.round(vpHeight * 0.20) - EDITOR_VERTICAL_PADDING;
   const optimalFont = Math.min(
     Math.max(11, Math.floor(availableEditorHeight / (sourceLines * LINE_HEIGHT_RATIO))),
     MAX_FONT
@@ -124,6 +124,7 @@ export async function renderFrames(opts: RendererOptions): Promise<RendererResul
     font: config.ide.font,
     fontSize: finalFontSize,
     filename,
+    editorVpad: Math.round(vpHeight * 0.20),
     language,
     monacoLanguage: getMonacoLanguage(language),
     languageLabel: LANGUAGE_LABELS[language] ?? 'Code',

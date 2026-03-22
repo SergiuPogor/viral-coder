@@ -116,6 +116,7 @@ body {
   flex: 1;
   overflow: hidden;
   position: relative;
+  padding: var(--editor-v-pad, 192px) 0;
 }
 
 #monaco-container {
@@ -423,6 +424,10 @@ window.initEditor = function(cfg) {
   document.getElementById('window-title').textContent = `${cfg.filename || 'index.ts'} — viral-coder`;
   document.getElementById('status-lang').textContent = cfg.languageLabel || 'JavaScript';
   document.getElementById('status-font-size').textContent = (cfg.fontSize || 15) + 'px';
+
+  // Apply vertical padding (safe area for TikTok/Reels overlays)
+  const vpad = cfg.editorVpad || 192;
+  document.documentElement.style.setProperty('--editor-v-pad', vpad + 'px');
 
   buildFileTree(cfg.filename || 'index.ts', cfg.language || 'typescript');
 
