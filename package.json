@@ -1,16 +1,37 @@
 {
   "name": "viral-coder",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Automated viral coding video generator — TikTok-ready MP4 from any code file",
-  "keywords": ["tiktok", "coding", "video", "automation", "ffmpeg", "playwright", "monaco"],
+  "keywords": [
+    "tiktok",
+    "coding",
+    "video",
+    "automation",
+    "ffmpeg",
+    "playwright",
+    "monaco"
+  ],
   "license": "MIT",
   "author": "Serghei Pogor <mediapronetsrl@gmail.com> (https://github.com/SergiuPogor)",
   "homepage": "https://github.com/SergiuPogor/viral-coder",
-  "repository": { "type": "git", "url": "https://github.com/SergiuPogor/viral-coder.git" },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SergiuPogor/viral-coder.git"
+  },
   "type": "module",
-  "bin": { "viral-coder": "./bin/viral-coder.js" },
-  "exports": { ".": "./dist/cli.js" },
-  "files": ["bin", "dist", "assets", "README.md", "LICENSE"],
+  "bin": {
+    "viral-coder": "./bin/viral-coder.js"
+  },
+  "exports": {
+    ".": "./dist/cli.js"
+  },
+  "files": [
+    "bin",
+    "dist",
+    "assets",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc && mkdir -p dist/renderer && cp src/renderer/editor.html dist/renderer/editor.html",
     "dev": "tsc --watch",
@@ -38,5 +59,7 @@
     "ts-jest": "^29.1.0",
     "typescript": "^5.5.0"
   },
-  "engines": { "node": ">=20.0.0" }
+  "engines": {
+    "node": ">=20.0.0"
+  }
 }
